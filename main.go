@@ -3,7 +3,11 @@ package main
 import (
 	"github.com/kataras/iris"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
+
+	"github.com/iris-contrib/middleware/cors"
+	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
+	"github.com/kataras/iris"
 )
 
 /*
@@ -29,14 +33,6 @@ import (
 > jwt-go
 */
 
-type User struct {
-	ID        string `json:"id"`
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	Age       int    `json:"age"`
-	Address   string `json:"address"`
-}
-
 func AuthHandler(ctx iris.Context) {
 	user := ctx.Values().Get("jwt").(*jwt.Token)
 	ctx.Writef("%s", user.Signature)
@@ -44,6 +40,42 @@ func AuthHandler(ctx iris.Context) {
 
 func main() {
 
+	port := "3000"
+	app := makeNew()
+
+}
+
+func makeNew() *iris.Application {
 	app := iris.New()
+
+	// make jwtAuth
+	jwtHandler := jwtmiddleware.New(jwtmiddleware.Config{
+		ValidationKeyGetter: func(token *jwt.Token) (interface{}, error) {
+			return []byte("secret"), nil
+		},
+		SigningMethod: jwt.SigningMethodHS256,
+	})
+
+	// make cors
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	})
+
+	// app.Get("/", index)
+
+	// api := app.Party("/api", corsHandler).AllowMethods(iris.MethodOptions)
+	// {
+	// 	api.Post("/login", login)
+
+	// 	v1 := api.Party("/v1")
+	// 	{
+	// 		v1.Use(jwtHandler.Serve)
+	// 		v1.Get("/users", users)
+	// 	}
+	// }
+
+	return app
 
 }
