@@ -26,6 +26,13 @@ import (
 - coding convention and no please silly naming and best practices of frameworks
 
 
+POST /login      log in
+GET  /users      get All user info
+GET  /user/1     get Single user info
+POST /user       sign up
+PUT  /user/1     password reset/hange
+
+
 > Iris
 > SQLite
 > go-REST
@@ -63,19 +70,31 @@ func makeNew() *iris.Application {
 		AllowCredentials: true,
 	})
 
-	// app.Get("/", index)
+	/*
+		POST /login      log in
+		GET  /users      get All user info
+		GET  /user/1     get Single user info
+		POST /user       sign up
+		PUT  /user/1     password reset/hange
+	*/
+	api := app.Party("/api", corsHandler).AllowMethods(iris.MethodOptions)
+	{
+		api.Post("/login", login)
 
-	// api := app.Party("/api", corsHandler).AllowMethods(iris.MethodOptions)
-	// {
-	// 	api.Post("/login", login)
-
-	// 	v1 := api.Party("/v1")
-	// 	{
-	// 		v1.Use(jwtHandler.Serve)
-	// 		v1.Get("/users", users)
-	// 	}
-	// }
+		v1 := api.Party("/v1")
+		{
+			//v1.Use(jwtHandler.Serve)
+			v1.Get("/users", users)
+			//v1.Get("/users/{id}", user)
+			//v1.Post("/user", signup)
+			//v1.Post("/user/{id}", passwordChange)
+		}
+	}
 
 	return app
+
+}
+
+func users(c iris.Context) {
 
 }
