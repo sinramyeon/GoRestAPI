@@ -93,8 +93,6 @@ func makeNew() *iris.Application {
 		// Resource: this to get all all users
 		v1.Get("/users", func(ctx iris.Context) {
 
-			fmt.Println("get users")
-
 			results, err := model.GetUsers()
 			if err != nil {
 				fmt.Println(err)
@@ -117,7 +115,7 @@ func makeNew() *iris.Application {
 
 			result, err := model.GetUser(msisdn)
 			if err != nil {
-				fmt.Println("get users")
+				fmt.Println(err)
 				ctx.StatusCode(iris.StatusBadRequest)
 			}
 			ctx.JSON(result)
@@ -128,9 +126,11 @@ func makeNew() *iris.Application {
 		v1.Put("/users/{id: string}", func(ctx iris.Context) {
 			msisdn := ctx.Params().Get("id")
 			params := &model.User{}
+			params.ID, _ = strconv.Atoi(msisdn)
 			err := ctx.ReadJSON(params)
 
 			if err != nil {
+				fmt.Println(err)
 				ctx.StatusCode(iris.StatusBadRequest)
 			}
 
@@ -138,8 +138,9 @@ func makeNew() *iris.Application {
 				ctx.StatusCode(iris.StatusBadRequest)
 			} else {
 
-				_, err := model.UpdateUser(ctx)
+				err := model.UpdateUser(params)
 				if err != nil {
+					fmt.Println(err)
 					ctx.StatusCode(iris.StatusBadRequest)
 				} else {
 					ctx.StatusCode(iris.StatusOK)
@@ -193,8 +194,6 @@ func makeNew() *iris.Application {
 			}
 
 			for _, user := range list.Users {
-
-				fmt.Println("list.Users")
 
 				if auth.UserId == strconv.Itoa(user.ID) && auth.Password == user.Password {
 					token := jwt.New(jwt.SigningMethodHS256)

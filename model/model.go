@@ -2,10 +2,7 @@ package model
 
 import (
 	"GoRestAPI/config"
-	"fmt"
 	"strconv"
-
-	"github.com/kataras/iris/context"
 )
 
 type User struct {
@@ -45,8 +42,6 @@ func GetUsers() (User, error) {
 
 	}
 
-	fmt.Println(u)
-
 	return u, err
 
 }
@@ -69,13 +64,9 @@ func CreateUser(u *User) error {
 
 }
 
-func UpdateUser(ctx context.Context) (User, error) {
-
-	u := &User{}
-	err := ctx.ReadJSON(u)
+func UpdateUser(u *User) error {
 
 	id := u.ID
-
 	firstname := u.Firstname
 	lastname := u.Lastname
 	email := u.Email
@@ -83,14 +74,13 @@ func UpdateUser(ctx context.Context) (User, error) {
 	address := u.Address
 	password := u.Password
 
-	err = config.SQL.QueryRow(`
-		UPDATE public."TESTUSER"
-		SET "FIRSTNAME"=$2, "LASTNAME"=$3, "EMAIL"=$4, "AGE"=$5, "ADDRESS"=$6, "PASSWORD"=$7
-		WHERE "ID"=$1;`,
-		id, firstname, lastname, email, age, address, password).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Email, &u.Age, &u.Address, &u.Password)
+	sqlStatement := `
+	UPDATE public."TESTUSER"
+	SET "FIRSTNAME"=$2, "LASTNAME"=$3, "EMAIL"=$4, "AGE"=$5, "ADDRESS"=$6, "PASSWORD"=$7
+	WHERE "ID"=$1;`
+	_, err := config.SQL.Exec(sqlStatement, id, firstname, lastname, email, age, address, password)
 
-	fmt.Println(u)
-	return *u, err
+	return err
 }
 
 func GetUser(id string) (User, error) {
@@ -99,7 +89,6 @@ func GetUser(id string) (User, error) {
 	u.ID, _ = strconv.Atoi(id)
 	err := config.SQL.QueryRow(`SELECT * FROM "TESTUSER" WHERE "ID"=$1;`, id).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Age, &u.Email, &u.Address, &u.Password)
 
-	fmt.Println(u)
 	return *u, err
 
 }
