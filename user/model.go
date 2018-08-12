@@ -68,3 +68,25 @@ func CreateUser(ctx context.Context) (User, error) {
 	return *u, err
 
 }
+
+func UpdateUser(ctx context.Context) (User, error) {
+
+	u := &User{}
+	err := ctx.ReadJSON(u)
+
+	id := u.ID
+	firstname := u.Firstname
+	lastname := u.Lastname
+	email := u.Email
+	age := u.Email
+	address := u.Address
+	password := u.Password
+
+	err = config.SQL.QueryRow(`
+		UPDATE public."USER"
+		SET "FIRSTNAME"=$2, "LASTNAME"=$3, "EMAIL"=$4, "AGE"=$5, "ADDRESS"=$6, "PASSWORD"=$7
+		WHERE "ID"=$1;`,
+		id, firstname, lastname, email, age, address, password).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Email, &u.Age, &u.Address, &u.Password)
+
+	return *u, err
+}

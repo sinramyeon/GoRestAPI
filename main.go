@@ -9,12 +9,11 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 
 	. "GoRestAPI/user"
-	. "GoRestAPI/model"
 	. "GoRestAPI/config"
 
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-	"github.com/kataras/iris"
+
 )
 
 /*
@@ -140,57 +139,69 @@ func makeNew() *iris.Application {
 
 	// Method:   PUT
 	// Resource: This is to update a user record
-	app.Handle("PATCH", "/users/{msisdn: string}", func(ctx context.Context) {
+	app.Handle("PUT", "/users/{msisdn: string}", func(ctx context.Context) {
 		msisdn := ctx.Params().Get("id")
+		params := &User{}
+		err := ctx.ReadJSON(params)
 		if msisdn == "" {
 			c.StatusCode(iris.StatusBadRequest)
+		}else {
+
+			user, err := user.UpdateUser()
+			if err != nil {
+				ctx.JSON(context.Map{"response": err.Error()})
+				ctx.StatusCode(iris.StatusBadRequest)
+			} else {			
+				ctx.StatusCode(iris.StatusOK)
+			}
+		}	
+	})
+
+	
+	// Method : GET
+	// Resource : This is to login
+	app.Handle("POST", "/login", func(ctx context.Context){
+
+		auth := new(model.Auth)
+		err := c.ReadJSON(auth)
+		if err != nil {
+			c.StatusCode(iris.StatusBadRequest)
+			c.WriteString(err.Error())
+			return
 		}
 	
+		list := user.GetUsers()
+	
+		for _, id := range list {
+			if auth.UserId == id, auth.Password ==  {
+				token := jwt.New(jwt.SigningMethodHS256)
+	
+				claims := token.Claims.(jwt.MapClaims)
+				claims["name"] = "Giancarlos"
+				claims["admin"] = true
+				claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+		
+				t, err := token.SignedString([]byte("secret"))
+				if err != nil {
+					c.StatusCode(iris.StatusInternalServerError)
+					c.WriteString(err.Error())
+				}
+		
+				c.JSON(map[string]interface{}{
+					"token":  t,
+					"expire": claims["exp"],
+				})
+	
+				c.StatusCode(iris.StatusOK)
+			}
+		}
+		
+		c.StatusCode(iris.StatusUnauthorized)
+
 	})
 
 	return app
 
-	// Method : GET
-	// Resource : This is to login
-
 }
 
 
-func login() {
-
-	auth := new(model.Auth)
-	err := c.ReadJSON(auth)
-	if err != nil {
-		c.StatusCode(iris.StatusBadRequest)
-		c.WriteString(err.Error())
-		return
-	}
-
-	list := user.GetUsers()
-
-	for _, id := range list {
-        if auth.UserId == id, auth.Password ==  {
-			token := jwt.New(jwt.SigningMethodHS256)
-
-			claims := token.Claims.(jwt.MapClaims)
-			claims["name"] = "Giancarlos"
-			claims["admin"] = true
-			claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-	
-			t, err := token.SignedString([]byte("secret"))
-			if err != nil {
-				c.StatusCode(iris.StatusInternalServerError)
-				c.WriteString(err.Error())
-			}
-	
-			c.JSON(map[string]interface{}{
-				"token":  t,
-				"expire": claims["exp"],
-			})
-		}
-    }
-
-
-	c.StatusCode(iris.StatusUnauthorized)
-
-}

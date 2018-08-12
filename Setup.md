@@ -23,46 +23,21 @@ GOPATH/bin. (Please check your GOPATH!)
 2. [TABLE SCRIPT]
 
 ```
-CREATE TABLE public."RECIPE"
+DROP TABLE IF EXISTS "USER";
+
+CREATE TABLE public."USER"
 (
-"UNIQUEID" serial,
-"NAME" character varying(60) COLLATE pg_catalog."default" NOT NULL,
-"PREPTIME" character varying(10) COLLATE pg_catalog."default" NOT NULL,
-"DIFFICULTY" integer NOT NULL,
-"VEGETARIAN" boolean NOT NULL,
-CONSTRAINT "RECIPE_pkey" PRIMARY KEY ("UNIQUEID")
+"ID" serial,
+"Firstname" character varying(10) COLLATE pg_catalog."default" NOT NULL,
+"Lastname" character varying(10) COLLATE pg_catalog."default" NOT NULL,
+"Age" integer NOT NULL,
+"Email" character varying(60) COLLATE pg_catalog."default" NOT NULL,
+"Address" character varying(100) COLLATE pg_catalog."default" NOT NULL,
+"Password" character varying(100) COLLATE pg_catalog."default" NOT NULL,
+CONSTRAINT "RECIPE_pkey" PRIMARY KEY ("ID")
 )
 WITH (
 OIDS = FALSE
 )
 TABLESPACE pg_default;
-
-ALTER TABLE public."RECIPE"
-OWNER to hellofresh;
 ```
-
-3. [API EndPoint]
-
-##### Recipes
-
-| Name | Method | URL | Protected |
-| --- | --- | --- | --- |
-| List | `GET` | `/recipes` | ✘ |
-| List | `GET` | `/recipes?p={p}` | ✘ |
-| Create | `POST` | `/recipes` | ✓ |
-| Get | `GET` | `/recipes/{id}` | ✘ |
-| Update | `PUT/PATCH` | `/recipes/{id}` | ✓ |
-| Delete | `DELETE` | `/recipes/{id}` | ✓ |
-| Rate | `Post` | `/recipes/{id}/rating` | ✘ |
-| Search | `GET` | `/recipes/name/search?q={q}` | ✘ |
-| Search | `GET` | `/recipes/time/search?q={q}` | ✘ |
-| Search | `GET` | `/recipes/difficulty/search?q={q}` | ✘ |
-| Search | `GET` | `/recipes/vegeterain/search?q={q}` | ✘ |
-| Search | `GET` | `/recipes/name/search?q={q}&p={p}` | ✘ |
-| Search | `GET` | `/recipes/time/search?q={q}&p={p}` | ✘ |
-| Search | `GET` | `/recipes/difficulty/search?q={q}&p={p}` | ✘ |
-| Search | `GET` | `/recipes/vegeterain/search?q={q}&p={p}` | ✘ |
-
-4. [Security]
-
-- jwt token
