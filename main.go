@@ -1,19 +1,16 @@
 package main
 
 import (
-	"net/http"
+	"GoRestAPI/config"
+	"GoRestAPI/model"
 	"time"
 
 	"github.com/kataras/iris"
 
 	jwt "github.com/dgrijalva/jwt-go"
 
-	. "GoRestAPI/user"
-	. "GoRestAPI/config"
-
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
-
 )
 
 /*
@@ -55,6 +52,7 @@ func main() {
 	config.Init()
 	port := "3000"
 	app := makeNew()
+	app.Run(iris.Addr(":" + port))
 }
 
 func makeNew() *iris.Application {
@@ -83,125 +81,132 @@ func makeNew() *iris.Application {
 		PUT  /user/1     password reset/hange
 	*/
 
+	v1 := app.Party("/api/v1", corsHandler).AllowMethods(iris.MethodOptions) // <- important for the preflight.
+	{
 
-	// Gets all users
-	// Method:   GET
-	// Resource: this to get all all users
-	app.Handle("GET", "/users", func(ctx context.Context) {
-		results, err :=  user.GetUsers()
-		if err != nil {
-			ctx.JSON(context.Map{"response": err.Error()})
-			ctx.StatusCode(iris.StatusNotFound)
-			
-		} else {
-			ctx.StatusCode(iris.StatusOK) 
-			ctx.JSON(results)
-		}
-	})
-
-	// Gets a single user
-	// Method:   GET
-	// Resource: this to get all all users
-	app.Handle("GET", "/users/{msisdn: id}", func(ctx context.Context) {
-		msisdn := ctx.Params().Get("msisdn")
-		if msisdn == "" {
-			c.StatusCode(iris.StatusBadRequest)
-		}
-
-		result, err := user.GetUser()
-		if err != nil {
-			ctx.JSON(context.Map{"response": err.Error()})
-			ctx.StatusCode(iris.StatusBadRequest)
-		}
-		ctx.JSON(result)
-	})
-
-	// Method:   POST
-	// Resource: This is to sign up a new user
-	app.Handle("POST", "/user", func(ctx context.Context) {
-		params := &User{}
-		err := ctx.ReadJSON(params)
-		if err != nil {
-			c.StatusCode(iris.StatusBadRequest)
-			ctx.JSON(context.Map{"response": err.Error()})
-		} else {
-
-			user, err := user.CreateUser()
+		v1.Use(jwtHandler.Serve)
+		// Gets all users
+		// Method:   GET
+		// Resource: this to get all all users
+		v1.Get("/users", func(ctx iris.Context) {
+			results, err := model.GetUsers()
 			if err != nil {
-				ctx.JSON(context.Map{"response": err.Error()})
-				ctx.StatusCode(iris.StatusBadRequest)
-			} else {			
+				ctx.StatusCode(iris.StatusNotFound)
+
+			} else {
 				ctx.StatusCode(iris.StatusOK)
+				ctx.JSON(results)
 			}
-		}
+		})
 
-	})
+		// Gets a single user
+		// Method:   GET
+		// Resource: this to get all all users
+		v1.Get("/users/{msisdn: id}", func(ctx iris.Context) {
+			msisdn := ctx.Params().Get("msisdn")
+			if msisdn == "" {
+				ctx.StatusCode(iris.StatusBadRequest)
+			}
 
-	// Method:   PUT
-	// Resource: This is to update a user record
-	app.Handle("PUT", "/users/{msisdn: string}", func(ctx context.Context) {
-		msisdn := ctx.Params().Get("id")
-		params := &User{}
-		err := ctx.ReadJSON(params)
-		if msisdn == "" {
-			c.StatusCode(iris.StatusBadRequest)
-		}else {
-
-			user, err := user.UpdateUser()
+			result, err := model.GetUser(msisdn)
 			if err != nil {
-				ctx.JSON(context.Map{"response": err.Error()})
 				ctx.StatusCode(iris.StatusBadRequest)
-			} else {			
-				ctx.StatusCode(iris.StatusOK)
 			}
-		}	
-	})
+			ctx.JSON(result)
+		})
 
-	
-	// Method : GET
-	// Resource : This is to login
-	app.Handle("POST", "/login", func(ctx context.Context){
+		// Method:   POST
+		// Resource: This is to sign up a new user
+		v1.Post("/user", func(ctx iris.Context) {
+			params := &model.User{}
+			err := ctx.ReadJSON(params)
+			if err != nil {
+				ctx.StatusCode(iris.StatusBadRequest)
+			} else {
 
-		auth := new(model.Auth)
-		err := c.ReadJSON(auth)
-		if err != nil {
-			c.StatusCode(iris.StatusBadRequest)
-			c.WriteString(err.Error())
-			return
-		}
-	
-		list := user.GetUsers()
-	
-		for _, id := range list {
-			if auth.UserId == id, auth.Password ==  {
-				token := jwt.New(jwt.SigningMethodHS256)
-	
-				claims := token.Claims.(jwt.MapClaims)
-				claims["name"] = "Giancarlos"
-				claims["admin"] = true
-				claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-		
-				t, err := token.SignedString([]byte("secret"))
+				_, err := model.CreateUser(ctx)
 				if err != nil {
-					c.StatusCode(iris.StatusInternalServerError)
-					c.WriteString(err.Error())
+					ctx.StatusCode(iris.StatusBadRequest)
+				} else {
+					ctx.StatusCode(iris.StatusOK)
 				}
-		
-				c.JSON(map[string]interface{}{
-					"token":  t,
-					"expire": claims["exp"],
-				})
-	
-				c.StatusCode(iris.StatusOK)
 			}
-		}
-		
-		c.StatusCode(iris.StatusUnauthorized)
 
-	})
+		})
+
+		// Method:   PUT
+		// Resource: This is to update a user record
+		v1.Put("/users/{msisdn: string}", func(ctx iris.Context) {
+			msisdn := ctx.Params().Get("id")
+			params := &model.User{}
+			err := ctx.ReadJSON(params)
+
+			if err != nil {
+				ctx.StatusCode(iris.StatusBadRequest)
+			}
+
+			if msisdn == "" {
+				ctx.StatusCode(iris.StatusBadRequest)
+			} else {
+
+				_, err := model.UpdateUser(ctx)
+				if err != nil {
+					ctx.StatusCode(iris.StatusBadRequest)
+				} else {
+					ctx.StatusCode(iris.StatusOK)
+				}
+			}
+		})
+
+		// Method : GET
+		// Resource : This is to login
+		v1.Post("/login", func(ctx iris.Context) {
+
+			auth := new(model.Auth)
+			err := ctx.ReadJSON(auth)
+
+			if err != nil {
+				ctx.StatusCode(iris.StatusBadRequest)
+
+				return
+			}
+
+			list, err := model.GetUsers()
+
+			if err != nil {
+				ctx.StatusCode(iris.StatusBadRequest)
+				return
+			}
+
+			for _, user := range list.Users {
+				if auth.UserId == user.ID && auth.Password == user.Password {
+					token := jwt.New(jwt.SigningMethodHS256)
+
+					claims := token.Claims.(jwt.MapClaims)
+					claims["name"] = user.Firstname + user.Lastname
+					claims["admin"] = true
+					claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+					t, err := token.SignedString([]byte("secret"))
+					if err != nil {
+						ctx.StatusCode(iris.StatusInternalServerError)
+					}
+
+					ctx.JSON(map[string]interface{}{
+						"token":  t,
+						"expire": claims["exp"],
+					})
+
+					ctx.StatusCode(iris.StatusOK)
+				}
+			}
+
+			ctx.StatusCode(iris.StatusUnauthorized)
+
+		})
+
+	}
 
 	return app
 
 }
-
-
