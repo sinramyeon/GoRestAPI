@@ -15,41 +15,6 @@ import (
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
 )
 
-/*
-1. GraphQL Rest API
-
-- sign up db record save 200
-- login jwt token 200
-- passowrd reset/change jwt token 200
-- cors support
-
-2. Note
-
-- use sql(add an instructions on how to create DB schema or preferably migrations.)
-- DDAY til sun
-- QOC not features!!!
-- coding convention and no please silly naming and best practices of frameworks
-
-
-POST /login      log in
-GET  /users      get All user info
-GET  /user/1     get Single user info
-POST /user       sign up
-PUT  /user/1     password reset/hange
-
-
-> Iris
-> SQLite
-> go-REST
-> go-CORS
-> jwt-go
-*/
-
-func AuthHandler(ctx iris.Context) {
-	user := ctx.Values().Get("jwt").(*jwt.Token)
-	ctx.Writef("%s", user.Signature)
-}
-
 func main() {
 	config.Init()
 	port := "3000"
@@ -74,14 +39,6 @@ func makeNew() *iris.Application {
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
 	})
-
-	/*
-		POST /login      log in
-		GET  /users      get All user info
-		GET  /user/1     get Single user info
-		POST /user       sign up
-		PUT  /user/1     password reset/hange
-	*/
 
 	v1 := app.Party("/api/v1", corsHandler).AllowMethods(iris.MethodOptions)
 	{
