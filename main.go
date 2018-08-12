@@ -85,6 +85,7 @@ func makeNew() *iris.Application {
 	{
 
 		v1.Use(jwtHandler.Serve)
+
 		// Gets all users
 		// Method:   GET
 		// Resource: this to get all all users
@@ -102,8 +103,8 @@ func makeNew() *iris.Application {
 		// Gets a single user
 		// Method:   GET
 		// Resource: this to get all all users
-		v1.Get("/users/{msisdn: id}", func(ctx iris.Context) {
-			msisdn := ctx.Params().Get("msisdn")
+		v1.Get("/users/{id: string}", func(ctx iris.Context) {
+			msisdn := ctx.Params().Get("id")
 			if msisdn == "" {
 				ctx.StatusCode(iris.StatusBadRequest)
 			}
@@ -136,7 +137,7 @@ func makeNew() *iris.Application {
 
 		// Method:   PUT
 		// Resource: This is to update a user record
-		v1.Put("/users/{msisdn: string}", func(ctx iris.Context) {
+		v1.Put("/users/{id: string}", func(ctx iris.Context) {
 			msisdn := ctx.Params().Get("id")
 			params := &model.User{}
 			err := ctx.ReadJSON(params)
