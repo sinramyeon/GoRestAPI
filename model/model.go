@@ -2,16 +2,18 @@ package model
 
 import (
 	"GoRestAPI/config"
+	"fmt"
+	"strconv"
 
 	"github.com/kataras/iris/context"
 )
 
 type User struct {
-	ID        string `json:"id"`
+	ID        int    `json:"id"`
 	Firstname string `json:"firstname"`
 	Lastname  string `json:"lastname"`
 	Email     string `json:"email"`
-	Age       int    `json:"age"`
+	Age       string `json:"age"`
 	Address   string `json:"address"`
 	Password  string `json:"password"`
 
@@ -21,7 +23,7 @@ type User struct {
 func GetUsers() (User, error) {
 
 	var u User
-	rows, err := config.SQL.Query(`SELECT * FROM "USER" ORDER BY "ID"`)
+	rows, err := config.SQL.Query(`SELECT * FROM "TESTUSER" ORDER BY "ID"`)
 	defer rows.Close()
 
 	if err == nil {
@@ -43,29 +45,27 @@ func GetUsers() (User, error) {
 
 	}
 
+	fmt.Println(u)
+
 	return u, err
 
 }
 
-func CreateUser(ctx context.Context) (User, error) {
-
-	u := &User{}
-	err := ctx.ReadJSON(u)
+func CreateUser(u *User) error {
 
 	firstname := u.Firstname
 	lastname := u.Lastname
 	email := u.Email
-	age := u.Email
+	age := u.Age
 	address := u.Address
 	password := u.Password
 
-	err = config.SQL.QueryRow(`
-		INSERT INTO public."USER"(
-			"FIRSTNAME", "LASTNAME", "EMAIL", "AGE", "ADDRESS", "PASSWORD")
-			VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-		firstname, lastname, email, age, address, password).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Email, &u.Age, &u.Address, &u.Password)
+	sqlStatement := `INSERT INTO public."TESTUSER"(
+	"FIRSTNAME", "LASTNAME", "EMAIL", "AGE", "ADDRESS", "PASSWORD")
+	VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := config.SQL.Exec(sqlStatement, firstname, lastname, email, age, address, password)
 
-	return *u, err
+	return err
 
 }
 
@@ -75,28 +75,31 @@ func UpdateUser(ctx context.Context) (User, error) {
 	err := ctx.ReadJSON(u)
 
 	id := u.ID
+
 	firstname := u.Firstname
 	lastname := u.Lastname
 	email := u.Email
-	age := u.Email
+	age := u.Age
 	address := u.Address
 	password := u.Password
 
 	err = config.SQL.QueryRow(`
-		UPDATE public."USER"
+		UPDATE public."TESTUSER"
 		SET "FIRSTNAME"=$2, "LASTNAME"=$3, "EMAIL"=$4, "AGE"=$5, "ADDRESS"=$6, "PASSWORD"=$7
 		WHERE "ID"=$1;`,
 		id, firstname, lastname, email, age, address, password).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Email, &u.Age, &u.Address, &u.Password)
 
+	fmt.Println(u)
 	return *u, err
 }
 
 func GetUser(id string) (User, error) {
 
 	u := &User{}
-	u.ID = id
-	err := config.SQL.QueryRow(`SELECT * FROM "USER" WHERE "ID"=$1;`, id).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Age, &u.Email, &u.Address, &u.Password)
+	u.ID, _ = strconv.Atoi(id)
+	err := config.SQL.QueryRow(`SELECT * FROM "TESTUSER" WHERE "ID"=$1;`, id).Scan(&u.ID, &u.Firstname, &u.Lastname, &u.Age, &u.Email, &u.Address, &u.Password)
 
+	fmt.Println(u)
 	return *u, err
 
 }

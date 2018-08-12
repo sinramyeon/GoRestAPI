@@ -3,6 +3,8 @@ package main
 import (
 	"GoRestAPI/config"
 	"GoRestAPI/model"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/kataras/iris"
@@ -81,7 +83,7 @@ func makeNew() *iris.Application {
 		PUT  /user/1     password reset/hange
 	*/
 
-	v1 := app.Party("/api/v1", corsHandler).AllowMethods(iris.MethodOptions) // <- important for the preflight.
+	v1 := app.Party("/api/v1", corsHandler).AllowMethods(iris.MethodOptions)
 	{
 
 		v1.Use(jwtHandler.Serve)
@@ -90,8 +92,12 @@ func makeNew() *iris.Application {
 		// Method:   GET
 		// Resource: this to get all all users
 		v1.Get("/users", func(ctx iris.Context) {
+
+			fmt.Println("get users")
+
 			results, err := model.GetUsers()
 			if err != nil {
+				fmt.Println(err)
 				ctx.StatusCode(iris.StatusNotFound)
 
 			} else {
@@ -111,28 +117,10 @@ func makeNew() *iris.Application {
 
 			result, err := model.GetUser(msisdn)
 			if err != nil {
+				fmt.Println("get users")
 				ctx.StatusCode(iris.StatusBadRequest)
 			}
 			ctx.JSON(result)
-		})
-
-		// Method:   POST
-		// Resource: This is to sign up a new user
-		v1.Post("/user", func(ctx iris.Context) {
-			params := &model.User{}
-			err := ctx.ReadJSON(params)
-			if err != nil {
-				ctx.StatusCode(iris.StatusBadRequest)
-			} else {
-
-				_, err := model.CreateUser(ctx)
-				if err != nil {
-					ctx.StatusCode(iris.StatusBadRequest)
-				} else {
-					ctx.StatusCode(iris.StatusOK)
-				}
-			}
-
 		})
 
 		// Method:   PUT
@@ -159,28 +147,56 @@ func makeNew() *iris.Application {
 			}
 		})
 
-		// Method : GET
+	}
+
+	api := app.Party("/api", corsHandler).AllowMethods(iris.MethodOptions)
+	{
+
+		// Method:   POST
+		// Resource: This is to sign up a new user
+		api.Post("/user", func(ctx iris.Context) {
+			params := &model.User{}
+			err := ctx.ReadJSON(params)
+
+			if err != nil {
+				fmt.Println(err)
+				ctx.StatusCode(iris.StatusBadRequest)
+			} else {
+				err := model.CreateUser(params)
+				if err != nil {
+					fmt.Println(err)
+					ctx.StatusCode(iris.StatusBadRequest)
+				} else {
+					ctx.StatusCode(iris.StatusOK)
+				}
+			}
+
+		})
+
+		// Method : POST
 		// Resource : This is to login
-		v1.Post("/login", func(ctx iris.Context) {
+		api.Post("/login", func(ctx iris.Context) {
 
 			auth := new(model.Auth)
 			err := ctx.ReadJSON(auth)
-
 			if err != nil {
+				fmt.Println(err)
 				ctx.StatusCode(iris.StatusBadRequest)
-
 				return
 			}
 
 			list, err := model.GetUsers()
-
 			if err != nil {
+				fmt.Println(err)
 				ctx.StatusCode(iris.StatusBadRequest)
 				return
 			}
 
 			for _, user := range list.Users {
-				if auth.UserId == user.ID && auth.Password == user.Password {
+
+				fmt.Println("list.Users")
+
+				if auth.UserId == strconv.Itoa(user.ID) && auth.Password == user.Password {
 					token := jwt.New(jwt.SigningMethodHS256)
 
 					claims := token.Claims.(jwt.MapClaims)
