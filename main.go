@@ -1,9 +1,16 @@
 package main
 
 import (
+	"net/http"
+	"time"
+
 	"github.com/kataras/iris"
 
 	jwt "github.com/dgrijalva/jwt-go"
+
+	. "GoRestAPI/user"
+	. "GoRestAPI/model"
+	. "GoRestAPI/config"
 
 	"github.com/iris-contrib/middleware/cors"
 	jwtmiddleware "github.com/iris-contrib/middleware/jwt"
@@ -46,10 +53,9 @@ func AuthHandler(ctx iris.Context) {
 }
 
 func main() {
-
+	config.Init()
 	port := "3000"
 	app := makeNew()
-
 }
 
 func makeNew() *iris.Application {
@@ -77,24 +83,114 @@ func makeNew() *iris.Application {
 		POST /user       sign up
 		PUT  /user/1     password reset/hange
 	*/
-	api := app.Party("/api", corsHandler).AllowMethods(iris.MethodOptions)
-	{
-		api.Post("/login", login)
 
-		v1 := api.Party("/v1")
-		{
-			//v1.Use(jwtHandler.Serve)
-			v1.Get("/users", users)
-			//v1.Get("/users/{id}", user)
-			//v1.Post("/user", signup)
-			//v1.Post("/user/{id}", passwordChange)
+
+	// Gets all users
+	// Method:   GET
+	// Resource: this to get all all users
+	app.Handle("GET", "/users", func(ctx context.Context) {
+		results, err :=  user.GetUsers()
+		if err != nil {
+			ctx.JSON(context.Map{"response": err.Error()})
+			ctx.StatusCode(iris.StatusNotFound)
+			
+		} else {
+			ctx.StatusCode(iris.StatusOK) 
+			ctx.JSON(results)
 		}
-	}
+	})
+
+	// Gets a single user
+	// Method:   GET
+	// Resource: this to get all all users
+	app.Handle("GET", "/users/{msisdn: id}", func(ctx context.Context) {
+		msisdn := ctx.Params().Get("msisdn")
+		if msisdn == "" {
+			c.StatusCode(iris.StatusBadRequest)
+		}
+
+		result, err := user.GetUser()
+		if err != nil {
+			ctx.JSON(context.Map{"response": err.Error()})
+			ctx.StatusCode(iris.StatusBadRequest)
+		}
+		ctx.JSON(result)
+	})
+
+	// Method:   POST
+	// Resource: This is to sign up a new user
+	app.Handle("POST", "/user", func(ctx context.Context) {
+		params := &User{}
+		err := ctx.ReadJSON(params)
+		if err != nil {
+			c.StatusCode(iris.StatusBadRequest)
+			ctx.JSON(context.Map{"response": err.Error()})
+		} else {
+
+			user, err := user.CreateUser()
+			if err != nil {
+				ctx.JSON(context.Map{"response": err.Error()})
+				ctx.StatusCode(iris.StatusBadRequest)
+			} else {			
+				ctx.StatusCode(iris.StatusOK)
+			}
+		}
+
+	})
+
+	// Method:   PUT
+	// Resource: This is to update a user record
+	app.Handle("PATCH", "/users/{msisdn: string}", func(ctx context.Context) {
+		msisdn := ctx.Params().Get("id")
+		if msisdn == "" {
+			c.StatusCode(iris.StatusBadRequest)
+		}
+	
+	})
 
 	return app
 
+	// Method : GET
+	// Resource : This is to login
+
 }
 
-func users(c iris.Context) {
+
+func login() {
+
+	auth := new(model.Auth)
+	err := c.ReadJSON(auth)
+	if err != nil {
+		c.StatusCode(iris.StatusBadRequest)
+		c.WriteString(err.Error())
+		return
+	}
+
+	list := user.GetUsers()
+
+	for _, id := range list {
+        if auth.UserId == id, auth.Password ==  {
+			token := jwt.New(jwt.SigningMethodHS256)
+
+			claims := token.Claims.(jwt.MapClaims)
+			claims["name"] = "Giancarlos"
+			claims["admin"] = true
+			claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+	
+			t, err := token.SignedString([]byte("secret"))
+			if err != nil {
+				c.StatusCode(iris.StatusInternalServerError)
+				c.WriteString(err.Error())
+			}
+	
+			c.JSON(map[string]interface{}{
+				"token":  t,
+				"expire": claims["exp"],
+			})
+		}
+    }
+
+
+	c.StatusCode(iris.StatusUnauthorized)
 
 }
