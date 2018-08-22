@@ -1,8 +1,8 @@
 package config
 
 import (
-	"GoPlayground/GOREST/config/cfpostgres"
-	"GoPlayground/GOREST/util"
+	"GoRestAPI/util"
+	"hero0926-api-test/config/cfpostgres"
 	"log"
 	"os"
 	"strings"
